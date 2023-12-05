@@ -1,0 +1,139 @@
+# Config format schema number
+format_version: 4
+
+###################
+## Model options
+model_params:
+  model_architecture: "cylinder_asym"
+
+  output_shape:
+    - 600
+    - 600
+    - 25
+
+
+  fea_dim: 7
+  out_fea_dim: 256
+  num_class: 2
+  num_input_features: 4
+  use_norm: True
+  init_size: 32
+
+###################
+## Dataset options
+dataset_params:
+  dataset_type: "voxel_dataset"
+  ignore_label: 30
+  return_test: True
+  fixed_volume_space: True
+  max_volume_space:
+    - 40
+    - 40
+    - 5
+  min_volume_space:
+    - -40
+    - -40
+    - -5
+
+###################
+## Data_loader options
+train_dataset:
+  use_waymo: False
+  use_valeo: True
+  use_bending: True
+  bend_max_k: 0.03
+  bend_max_len: 30
+  use_intensity_jitter: False
+  use_intensity_shift: True
+  waymo_config:
+    #source: '/datagrid/personal/vacekpa2/kodejond/waymo_dataset/train/accumulated_converted/'
+    source: '/home/koondra/waymo_dataset/train/accumulated_fixed/'
+    use_gamma: False
+    use_rsj: False
+  valeo_config:
+    source: ''
+    filenames_file: './downsampled_test/train_filenames.pkl'
+    use_gamma: False
+    use_rsj: False
+
+
+val_dataset:
+  use_waymo: False
+  use_valeo: True
+  use_bending: False
+  bend_max_k: 0.07
+  bend_max_len: 40
+  use_intensity_jitter: False
+  use_intensity_shift: False
+  waymo_config:
+    source: '/home/koondra/waymo_dataset/val/accumulated_fixed/'
+    #source: '/datagrid/personal/vacekpa2/kodejond/waymo_dataset/validation/accumulated_converted/'
+    use_gamma: False
+    use_rsj: False
+  valeo_config:
+    source: ''
+    filenames_file: './downsampled_test/val_filenames.pkl'
+    use_gamma: False
+    use_rsj: False
+
+test_dataset:
+  use_waymo: False
+  use_valeo: True
+  use_bending: False
+  bend_max_k: 0.07
+  bend_max_len: 40
+  use_intensity_jitter: False
+  use_intensity_shift: False
+  waymo_config:
+    source: '/home/koondra/waymo_dataset/val/accumulated_fixed/'
+    use_gamma: False
+    use_rsj: False
+  valeo_config:
+    source: ''
+    filenames_file: './downsampled_test/test_filenames.pkl'
+    use_gamma: False
+    use_rsj: False
+
+train_data_loader:
+  return_ref: True
+  batch_size: 1
+  shuffle: True
+  num_workers: 5
+
+
+val_data_loader:
+  return_ref: True
+  batch_size: 1
+  shuffle: True
+  num_workers: 5
+  
+test_data_loader:
+  return_ref: True
+  batch_size: 1
+  shuffle: False
+  num_workers: 2
+
+
+###################
+## test params
+train_params:
+  model_load_path: "./downsampled_test/best_val.pt"
+  model_save_path: "./downsampled_test/best_val.pt"
+  checkpoint_every_n_steps: 100
+  max_num_epochs: 40
+  eval_every_n_steps: 1000
+  learning_rate: 1e-3
+  use_cut_mix: False
+
+  resume: False
+  optimizer_save_path: './model_save_dir04/optimizer.pt'
+  scheduler_save_path: './model_save_dir04/scheduler.pt'
+  progres_save_path: './model_save_dir04/progress_dict.pkl'
+  save_progress_iters: 100
+  checkpoint_save_path: './downsampled_test/model_checkpoint.pt'
+  weight_decay: 0.1e-5
+
+  save_vis: False
+  vis_save_path: './downsampled_test/'
+
+
