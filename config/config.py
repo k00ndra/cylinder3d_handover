@@ -105,7 +105,6 @@ train_params = Map(
         "model_save_path": Str(),
         "checkpoint_every_n_steps": Int(),
         "max_num_epochs": Int(),
-        "eval_every_n_steps": Int(),
         "learning_rate": Float(),
         "use_cut_mix": Bool(),
         "checkpoint_save_path": Str(),

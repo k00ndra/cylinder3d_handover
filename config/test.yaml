@@ -27,12 +27,12 @@ dataset_params:
   return_test: True
   fixed_volume_space: True
   max_volume_space:
-    - 15
-    - 15
+    - 30
+    - 30
     - 5
   min_volume_space:
-    - -15
-    - -15
+    - -30
+    - -30
     - -5
 
 ###################
@@ -42,18 +42,18 @@ train_dataset:
   bend_max_k: 0.05
   bend_max_len: 40
   use_intensity_jitter: False
-  use_intensity_shift: True
+  use_intensity_shift: False
   filenames_file: './train_filenames_large.pkl'
   use_gamma: False
   use_rsj: False
 
 
 val_dataset:
-  use_bending: True
+  use_bending: False
   bend_max_k: 0.07
   bend_max_len: 40
-  use_intensity_jitter: True
-  use_intensity_shift: True
+  use_intensity_jitter: False
+  use_intensity_shift: False
   filenames_file: './train_filenames_large.pkl'
   use_gamma: False
   use_rsj: False
@@ -95,7 +95,6 @@ train_params:
   model_save_path: "./test_55/best_val02000.pt"
   checkpoint_every_n_steps: 100
   max_num_epochs: 50
-  eval_every_n_steps: 1000
   learning_rate: 1e-2
   use_cut_mix: False
   checkpoint_save_path: './test_55/model_checkpoint02000.pt'

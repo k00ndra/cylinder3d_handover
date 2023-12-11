@@ -123,12 +123,10 @@ def main(args):
     #                                                 steps_per_epoch=len(source_train_dataset_loader),
     #                                                 epochs=train_hypers["max_num_epochs"])
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 4, 0.7)
-    check_iter = train_hypers['eval_every_n_steps']
 
     global global_iter, best_val_miou, epoch
     print("|-------------------------Training started-----------------------------------------|")
 
-    print('progress dictionary prepared')
     #summary_writer = SummaryWriter('./final_test03/log01')
     summary_writer = None
     # Define training mode and function

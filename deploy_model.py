@@ -10,13 +10,14 @@ import torch
 from tqdm import tqdm
 import sys
 import os
+import torch.nn.functional as F
 
 DEVICE = 'cuda:0'
 
 
 SAVE_DEBUG_PATCHES = False
 RETURN_UPSAMPLED_MASK = False
-SELECTION_STRATEGY = 'last'  # 'last' 'confidence' 'or'
+SELECTION_STRATEGY = 'last'  # 'last', 'or'
 # TODO confidence not yet working
 
 def get_dataloader(source_path: str, partition_size: float, voxel_size: float, configs):
@@ -69,15 +70,15 @@ def upsample_mask(full_point_cloud: np.ndarray, downsampled_mask: np.ndarray, do
     return full_mask
 
 def run_model(model, dataloader, model_config):
-
-    def label_pts(grid_ten, vox_label):
-        point_labels_ten = vox_label[0, :]
-        grid = grid_ten[0].cpu()
-        pt_lab_lin = point_labels_ten.reshape(-1)
-        grid_lin = np.ravel_multi_index(grid.numpy().T, model_config['output_shape'])
-        out_labels = pt_lab_lin[torch.from_numpy(grid_lin)]
-        labels = out_labels.reshape(-1, 1)
-        print(np.count_nonzero(labels.cpu().numpy()))
+    def label_pts(self, grid_ten, vox_label):
+        labels = []
+        for i in range(vox_label.shape[0]):
+            point_labels_ten = vox_label[i, :]
+            grid = grid_ten[i].cpu()
+            pt_lab_lin = point_labels_ten.reshape(-1)
+            grid_lin = np.ravel_multi_index(grid.numpy().T, self.model_config['output_shape'])
+            out_labels = pt_lab_lin[torch.from_numpy(grid_lin)]
+            labels.append(out_labels.reshape(-1, 1))
         return labels
 
     def map_outputs_to_pts(grid_indices: np.ndarray, outputs: np.ndarray):
@@ -110,10 +111,10 @@ def run_model(model, dataloader, model_config):
 
         inp = label_tensor.size(0)
         outputs = outputs[:inp, :, :, :, :]
-        mapped_outputs = map_outputs_to_pts(train_grid[0], outputs.clone().cpu().numpy())
+        predict_probabilities = F.softmax(outputs, dim=1)
         predict_labels = torch.argmax(outputs, dim=1)
         labels = label_pts(grid_ten, predict_labels)
-        outputs_dict[index] = [mapped_outputs, xyzil, labels.cpu().numpy()]
+        outputs_dict[index] = [xyzil, labels]
 
         if SAVE_DEBUG_PATCHES:
             patch_path = os.path.join('./debug_patches', f'patch_{index}.npz')
@@ -124,10 +125,6 @@ def run_model(model, dataloader, model_config):
     pbar.close()
     return outputs_dict
 
-def softmax_outputs(output_logits: np.ndarray):
-    softmaxed_logits = np.exp(output_logits) / np.sum(np.exp(output_logits), axis=1, keepdims=True)
-    return softmaxed_logits
-
 def get_labels(outputs_dict: dict, downsampled_point_cloud: np.ndarray, masks: list):
 
     # TODO implement overlap decision heuristics - use softmax probabilities
@@ -135,30 +132,24 @@ def get_labels(outputs_dict: dict, downsampled_point_cloud: np.ndarray, masks: l
     confidences = -np.ones_like(label_dim)
 
     for index in range(len(masks)):
-        logits, _, labels = outputs_dict[index]
+        _, labels = outputs_dict[index]
         mask = masks[index]
-        probablities = softmax_outputs(logits)
-        prob_diffs = np.abs(probablities[:, 0] - probablities[:, 1])
 
         # TODO temp
         if SELECTION_STRATEGY == 'last':
             label_dim[mask] = labels.reshape(-1)
         elif SELECTION_STRATEGY == 'or':
             label_dim[mask] = np.logical_or(label_dim[mask].astype(bool), labels.astype(bool))
-        elif SELECTION_STRATEGY == 'confidence':
-            prob_diff_mask = prob_diffs > confidences[mask]
-            label_dim[mask][prob_diff_mask] = labels.reshape(-1)[prob_diff_mask]
         else:
             print('unknown strategy')
 
         #prob_diff_mask = prob_diffs > confidences[mask]
         #label_dim[mask][prob_diff_mask] = labels.reshape(-1)[prob_diff_mask]
-        confidences[mask] = prob_diffs.reshape(-1)
 
-    labeled_point_cloud = np.concatenate([downsampled_point_cloud, label_dim.reshape(-1, 1), confidences.reshape(-1, 1)], axis=1)
+    labeled_point_cloud = np.concatenate([downsampled_point_cloud, label_dim.reshape(-1, 1)], axis=1)
     return labeled_point_cloud
 
-def     deploy_model(config_path: str, source_path: str, partition_size: float, voxel_size: float):
+def deploy_model(config_path: str, source_path: str, partition_size: float, voxel_size: float):
 
     # load configuration
     configs = load_config_data(config_path)
