@@ -30,42 +30,62 @@ dataset_params = Map(
     }
 )
 
+waymo_config = Map(
+    {
+        "source": Str(),
+        "use_gamma": Bool(),
+        "use_rsj": Bool()
+    }
+)
+
+valeo_config = Map(
+    {
+        "source": Str(),
+        "filenames_file": Str(),
+        "use_gamma": Bool(),
+        "use_rsj": Bool()
+    }
+)
+
 train_dataset = Map(
     {
+        "use_waymo": Bool(),
+        "use_valeo": Bool(),
         "use_bending": Bool(),
         "bend_max_k": Float(),
         "bend_max_len": Float(),
         "use_intensity_jitter": Bool(),
         "use_intensity_shift": Bool(),
-        "filenames_file": Str(),
-        "use_gamma": Bool(),
-        "use_rsj": Bool()
+        "waymo_config": waymo_config,
+        "valeo_config": valeo_config
     }
 )
 
 val_dataset = Map(
     {
+        "use_waymo": Bool(),
+        "use_valeo": Bool(),
         "use_bending": Bool(),
         "bend_max_k": Float(),
         "bend_max_len": Float(),
         "use_intensity_jitter": Bool(),
         "use_intensity_shift": Bool(),
-        "filenames_file": Str(),
-        "use_gamma": Bool(),
-        "use_rsj": Bool()
+        "waymo_config": waymo_config,
+        "valeo_config": valeo_config
     }
 )
 
 test_dataset = Map(
     {
+        "use_waymo": Bool(),
+        "use_valeo": Bool(),
         "use_bending": Bool(),
         "bend_max_k": Float(),
         "bend_max_len": Float(),
         "use_intensity_jitter": Bool(),
         "use_intensity_shift": Bool(),
-        "filenames_file": Str(),
-        "use_gamma": Bool(),
-        "use_rsj": Bool()
+        "waymo_config": waymo_config,
+        "valeo_config": valeo_config
     }
 )
 
@@ -105,8 +125,14 @@ train_params = Map(
         "model_save_path": Str(),
         "checkpoint_every_n_steps": Int(),
         "max_num_epochs": Int(),
+        "eval_every_n_steps": Int(),
         "learning_rate": Float(),
         "use_cut_mix": Bool(),
+        "resume": Bool(),
+        "optimizer_save_path": Str(),
+        "scheduler_save_path": Str(),
+        "progres_save_path": Str(),
+        "save_progress_iters": Int(),
         "checkpoint_save_path": Str(),
         "weight_decay": Float(),
         "save_vis": Bool(),

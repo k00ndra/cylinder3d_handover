@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
 
-from model.cylinder_3d import get_model_class
-from model.segment_3d_new import Asymm_3d_spconv
-from model.cylinder_feature import cylinder_fea
+from segmentation.model.cylinder_3d import get_model_class
+from segmentation.model.segment_3d_new import Asymm_3d_spconv
+from segmentation.model.cylinder_feature import cylinder_fea
 
 
 def build(model_config):

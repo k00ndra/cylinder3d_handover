@@ -1,25 +1,24 @@
-import pickle
-
 import numpy as np
 from torch.utils import data
-import os
 from pyntcloud import PyntCloud
+from tqdm import tqdm
 
 class DeploymentDataset(data.Dataset):
 
-    def __init__(self, source_npz_file: str, partition_size: float, voxel_size: float):
-        self.source_point_cloud = np.load(source_npz_file)['data'][:, :4]  # take xyzi
+    def __init__(self, point_cloud: np.ndarray, partition_size: float, voxel_size: float, max_num_pts: int = -1):
+        self.source_point_cloud = point_cloud[:, :4]  # take xyzi
         #self.source_point_cloud = self.load_pcd_to_numpy(source_npz_file)[:,:4]
         self.partition_size = partition_size
         self.voxel_size = voxel_size
         self.downsamled_point_cloud = None
         self.masks = None
+        self.max_num_pts = max_num_pts
 
-    def generate_split(self):
+    def generate_split(self, max_pts: int):
         print(f'Downsampling pointcloud with shape: {self.source_point_cloud.shape}')
         self.downsamled_point_cloud, grid_min_coords, grid_indices = self.voxel_downsample(self.source_point_cloud, self.voxel_size)
         print(f'Downsampled point cloud to {self.downsamled_point_cloud.shape[0]} points')
-        self.masks = self.generate_split_masks(self.downsamled_point_cloud, self.partition_size)
+        self.masks = self.generate_split_masks(self.downsamled_point_cloud, self.partition_size, max_pts)
         return self.masks, grid_min_coords, grid_indices, self.downsamled_point_cloud
 
     def __len__(self):
@@ -33,7 +32,10 @@ class DeploymentDataset(data.Dataset):
         sample_xyzi[:, :3] -= sample_xyzi[:, :3].mean(axis=0)
 
         xyz = sample_xyzi[:, :3]
-        sig = sample_xyzi[:, -1].reshape(-1, 1) / 255
+        if sample_xyzi[:, -1].max() <= 1:
+            sig = sample_xyzi[:, -1].reshape(-1, 1)
+        else:
+            sig = sample_xyzi[:, -1].reshape(-1, 1) / 255
         index_labels = index * np.ones_like(sig).reshape(-1, 1)
 
         data_tuple = (xyz, index_labels.astype(np.uint8), sig)
@@ -53,45 +55,48 @@ class DeploymentDataset(data.Dataset):
         # compute grid boundaries
         max_coords = xyz.max(axis=0)
         min_coords = xyz.min(axis=0)
-        grid_size = np.ceil((max_coords - min_coords) / voxel_size).astype(np.int64) + 1  # x_size / y_size / z_size
+        grid_size = np.ceil((max_coords - min_coords) / voxel_size).astype(np.int64)  # x_size / y_size / z_size
 
-        # compute the point to voxel indices
-        centered_xyz = xyz - min_coords
-        point_indices = np.floor(centered_xyz / voxel_size).astype(np.int64)
+        if voxel_size > 0:
+            # compute the point to voxel indices
+            centered_xyz = xyz - min_coords
+            point_indices = np.floor(centered_xyz / voxel_size).astype(np.int64)
 
-        # prepare indices and conversion table
-        multi_index = (point_indices[:, 0], point_indices[:, 1], point_indices[:, 2])
-        lin_point_indices = np.ravel_multi_index(multi_index, grid_size)
-        unique_lin_indices, inverse_indices = np.unique(lin_point_indices, return_inverse=True)
-        temp_indices = np.arange(unique_lin_indices.shape[0])
+            # prepare indices and conversion table
+            multi_index = (point_indices[:, 0], point_indices[:, 1], point_indices[:, 2])
+            lin_point_indices = np.ravel_multi_index(multi_index, grid_size)
+            unique_lin_indices, inverse_indices = np.unique(lin_point_indices, return_inverse=True)
+            temp_indices = np.arange(unique_lin_indices.shape[0])
 
-        indices = temp_indices[inverse_indices]
+            indices = temp_indices[inverse_indices]
 
-        # compute the counts of each voxel idx in pointcloud
-        index_counts = np.zeros_like(unique_lin_indices)
-        np.add.at(index_counts, indices, 1)
+            # compute the counts of each voxel idx in pointcloud
+            index_counts = np.zeros_like(unique_lin_indices)
+            np.add.at(index_counts, indices, 1)
 
-        # compute the centroids
-        buffer_x = np.zeros_like(unique_lin_indices).astype(np.float64)
-        buffer_y = buffer_x.copy()
-        buffer_z = buffer_x.copy()
-        np.add.at(buffer_x, indices, xyz[:, 0])
-        np.add.at(buffer_y, indices, xyz[:, 1])
-        np.add.at(buffer_z, indices, xyz[:, 2])
-        centroids = np.concatenate([
-            buffer_x.reshape(-1, 1), buffer_y.reshape(-1, 1), buffer_z.reshape(-1, 1)
-        ], axis=1)
-        centroids /= index_counts.reshape(-1, 1)
+            # compute the centroids
+            buffer_x = np.zeros_like(unique_lin_indices).astype(np.float64)
+            buffer_y = buffer_x.copy()
+            buffer_z = buffer_x.copy()
+            np.add.at(buffer_x, indices, xyz[:, 0])
+            np.add.at(buffer_y, indices, xyz[:, 1])
+            np.add.at(buffer_z, indices, xyz[:, 2])
+            centroids = np.concatenate([
+                buffer_x.reshape(-1, 1), buffer_y.reshape(-1, 1), buffer_z.reshape(-1, 1)
+            ], axis=1)
+            centroids /= index_counts.reshape(-1, 1)
 
-        # compute intensity average
-        intensity_buffer = np.zeros_like(unique_lin_indices).astype(np.float64)
-        np.add.at(intensity_buffer, indices, intensity)
-        intensity_average = intensity_buffer / index_counts
+            # compute intensity average
+            intensity_buffer = np.zeros_like(unique_lin_indices).astype(np.float64)
+            np.add.at(intensity_buffer, indices, intensity)
+            intensity_average = intensity_buffer / index_counts
 
-        # assemble the pointcloud
-        downsampled_point_cloud = np.concatenate([
-            centroids, intensity_average.reshape(-1, 1)
-        ], axis=1)
+            # assemble the pointcloud
+            downsampled_point_cloud = np.concatenate([
+                centroids, intensity_average.reshape(-1, 1)
+            ], axis=1)
+        else:
+            downsampled_point_cloud = point_cloud[:, :4]
 
         grid_indices = np.floor((downsampled_point_cloud[:, :3] - min_coords) / voxel_size).astype(np.int64)
 
@@ -104,7 +109,7 @@ class DeploymentDataset(data.Dataset):
 
         return grid_size, sub_part_indices
 
-    def choose_cover(self, grid_idx: np.ndarray, grid_indices: np.ndarray, grid_size: np.ndarray):
+    def choose_cover(self, grid_idx: np.ndarray, grid_indices: np.ndarray, grid_size: np.ndarray, max_pts: int):
 
         def fits_grid(idx: np.ndarray, grid_size: np.ndarray):
             fits = idx[0] >= 0 and idx[1] >= 0 and idx[0] < grid_size[0] and idx[1] < grid_size[1]
@@ -146,20 +151,26 @@ class DeploymentDataset(data.Dataset):
                 new_idx = grid_idx + idx_offset
                 if fits_grid(new_idx, grid_size):
                     # compute the number of matching indices -- points
-                    cur_cover_mask = (grid_indices == new_idx.reshape(-1, 1).T).all(axis=1)
+                    #cur_cover_mask = (grid_indices == new_idx.reshape(-1, 1).T).all(axis=1)
+                    cur_cover_mask = np.logical_and(
+                        grid_indices[:, 0] == new_idx[0],
+                        grid_indices[:, 1] == new_idx[1]
+                    )
                     cover_mask = np.logical_or(cover_mask, cur_cover_mask)
             score = np.sum(cover_mask)
-            if score > best_score:
+            if best_score < 0 or (score > best_score and (score <= max_pts or max_pts <= 0)) or (best_score > max_pts and max_pts > 0 and score < max_pts):
                 best_score = score
                 best_cover_mask = cover_mask
 
         return best_cover_mask
 
     def delete_duplicate_masks(self, masks_list: list):
+        print('deleting duplicate masks')
         stacked_masks = np.vstack(masks_list)
         unique_masks = np.unique(stacked_masks, axis=0)
         unique_masks_list = [unique_masks[i, :] for i in range(unique_masks.shape[0])]
-        print(unique_masks_list[0].shape)
+        print('duplicate masks deleted')
+        #print(unique_masks_list[0].shape)
         return unique_masks_list
 
     def check_mask_covering(self, masks_list: list):
@@ -173,17 +184,26 @@ class DeploymentDataset(data.Dataset):
 
         return covered == np.sum(check_mask)
 
-    def generate_split_masks(self, point_cloud: np.ndarray, partition_size: float):
+    def generate_split_masks(self, point_cloud: np.ndarray, partition_size: float, max_pts: int, first_call:bool=True):
+        print('generating split')
         grid_size, grid_indices = self.sub_partition_xy(point_cloud, partition_size / 2)
         unique_grid_indices = np.unique(grid_indices, axis=0)
-        print(unique_grid_indices.shape)
+        #print(unique_grid_indices.shape)
         cover_masks = []
+        if first_call:
+            pbar = tqdm(total=unique_grid_indices.shape[0])
         for temp_idx in range(unique_grid_indices.shape[0]):
             grid_idx = unique_grid_indices[temp_idx, :]
-            cur_cover_mask = self.choose_cover(grid_idx, grid_indices, grid_size)
+            cur_cover_mask = self.choose_cover(grid_idx, grid_indices, grid_size, max_pts)
             cover_masks.append(cur_cover_mask)
 
-        unique_cover_masks = self.delete_duplicate_masks(cover_masks)
+            if first_call:
+                pbar.update(1)
+        if first_call:
+            pbar.close()
+
+        #unique_cover_masks = self.delete_duplicate_masks(cover_masks)
+        unique_cover_masks = cover_masks
 
         if not self.check_mask_covering(unique_cover_masks):
             exit(-1)

@@ -2,8 +2,8 @@
 # author: Awet H. Gebrehiwot
 # --------------------------|
 import torch
-from utils.lovasz_losses import lovasz_softmax, lovasz_softmax_lcw, cross_entropy_lcw
-from utils.loss_func import FocalLoss
+from segmentation.utils.lovasz_losses import lovasz_softmax, lovasz_softmax_lcw, cross_entropy_lcw
+from segmentation.utils.loss_func import FocalLoss
 
 
 def build(wce=True, lovasz=True, num_class=20, ignore_label=None, weights=None, ssl=False, fl=False):

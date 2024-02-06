@@ -12,6 +12,7 @@ def load_checkpoint(model_load_path, model, map_location=None):
     part_load = {}
     match_size = 0
     nomatch_size = 0
+    old_match_size = 0
     for k in pre_weight.keys():
         value = pre_weight[k]
         if k[:7] == 'module.':
@@ -21,16 +22,13 @@ def load_checkpoint(model_load_path, model, map_location=None):
             match_size += 1
             part_load[k] = value
         elif k in my_model_dict and my_model_dict[k].shape == value.permute(4, 0, 1, 2, 3).contiguous().shape:
-            print('loading old spconv weights')
+            print(f'loading old spconv weights for {k} from shape {value.shape} to {value.permute(4, 0, 1, 2, 3).contiguous().shape}')
             part_load[k] = value.permute(4, 0, 1, 2, 3).contiguous()
+            old_match_size += 1
         else:
-            print(k)
-            print(my_model_dict[k].shape, value.shape)
-            print(value.permute(4, 0, 1, 2, 3).contiguous().shape)
-            part_load[k] = value.permute(4, 0, 1, 2, 3).contiguous()
             nomatch_size += 1
 
-    print("matched parameter sets: {}, and no matched: {}".format(match_size, nomatch_size))
+    print("matched parameter sets: {},old parameter sets: {}, and no matched: {}".format(match_size,old_match_size, nomatch_size))
 
     my_model_dict.update(part_load)
     model.load_state_dict(my_model_dict)
