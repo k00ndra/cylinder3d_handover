@@ -15,7 +15,7 @@ CUDA_CARD: 'cuda:0' # important
 XML_FILE_NAME: "result.xml" # not important
 ANIMATION: False # important
 
-MODEL_CONFIG_PATH: "./model_checkpoint_wd_config.yaml" # important path to cylinder model config
+MODEL_CONFIG_PATH: "./models/model02/model_checkpoint_wd_config.yaml" # important path to cylinder model config
 MODEL_PARTITION_SIZE: 60 # important - for preprocessing
 MODEL_VOXEL_SIZE: 0.15 # important - for preprocessing
 MODEL_SAVE_DEBUG: False # not important
