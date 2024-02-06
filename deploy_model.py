@@ -1,8 +1,8 @@
-from segmentation.dataloader.deployment_dataset import DeploymentDataset
-from segmentation.builder import model_builder
-from segmentation.config.config import load_config_data
-from segmentation.utils.load_save_util import load_checkpoint
-from segmentation.dataloader.dataset_semantickitti import get_model_class, collate_fn_BEV
+from dataloader.deployment_dataset import DeploymentDataset
+from builder import model_builder
+from config.config import load_config_data
+from utils.load_save_util import load_checkpoint
+from dataloader.dataset_semantickitti import get_model_class, collate_fn_BEV
 import numpy as np
 import torch
 from tqdm import tqdm

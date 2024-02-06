@@ -1,7 +1,8 @@
 import numpy as np
-
+import sys
+from ruamel.yaml import YAML
 from plot_segmentation import visualize_points
-from deploy_model import deploy_model
+from deploy_model import deploy_model, parse_input, merge_point_cloud
 
 
 def segmentation_main(data_dict, config):
@@ -34,17 +35,15 @@ def segmentation_main(data_dict, config):
         visualize_points(point_cloud, point_cloud[final_mask, :])
 
 if __name__ == '__main__':
-    import sys
-    from pyntcloud import PyntCloud
-    from ruamel.yaml import YAML
 
     npz_path = sys.argv[1]
     pipeline_config_path = sys.argv[2]
 
-    # load point cloudd
-    pcd_numpy = np.load(npz_path)['data']
+    # load point cloud
+    scan_list, pose_list = parse_input(npz_path)
     data_dict = dict()
-    data_dict['data'] = pcd_numpy[:, :5]
+    data_dict['data'] = merge_point_cloud(frames_list=scan_list, pose_list=pose_list, pipeline_config=config)
+    data_dict['poses'] = pose_list
     print(f"pointcloud loaded {data_dict['data'].shape}")
 
     # load config
