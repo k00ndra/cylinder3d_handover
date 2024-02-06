@@ -37,7 +37,14 @@ def segmentation_main(data_dict, config):
 if __name__ == '__main__':
 
     npz_path = sys.argv[1]
-    pipeline_config_path = sys.argv[2]
+
+    # load config
+    pipeline_config_path = "config.yaml"
+    yaml = YAML()
+    yaml.default_flow_style = False
+    with open(pipeline_config_path, "r") as f:
+        config = yaml.load(f)
+    print('config loaded')
 
     # load point cloud
     scan_list, pose_list = parse_input(npz_path)
@@ -46,12 +53,7 @@ if __name__ == '__main__':
     data_dict['poses'] = pose_list
     print(f"pointcloud loaded {data_dict['data'].shape}")
 
-    # load config
-    yaml = YAML()
-    yaml.default_flow_style = False
-    with open(pipeline_config_path, "r") as f:
-        config = yaml.load(f)
-    print('config loaded')
+
 
     # run the pipeline
     segmentation_main(data_dict, config)

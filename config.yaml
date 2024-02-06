@@ -3,27 +3,27 @@ RUN_PARTS:
   INSTANCES: False
   MATCHING: False
 SAVE_NAMES:
-  SEGMENTATION: "segmentation.npy"
-  INSTANCES: "instances.npy"
-  MATCHING: "matching.npy"
+  SEGMENTATION: "segmentation.npy" # not important
+  INSTANCES: "instances.npy" # not important
+  MATCHING: "matching.npy" # not important
 LOAD_NAMES:
-  SEGMENTATION: "segmentation.npy"
-  INSTANCES: "instances.npy"
-  MATCHING: "matching.npy"
-DATA_PATH: ""
-CUDA_CARD: 'cuda:0'
-XML_FILE_NAME: "result.xml"
-ANIMATION: False
+  SEGMENTATION: "segmentation.npy" # not important
+  INSTANCES: "instances.npy" # not important
+  MATCHING: "matching.npy" # not important
+DATA_PATH: "" # not important
+CUDA_CARD: 'cuda:0' # important
+XML_FILE_NAME: "result.xml" # not important
+ANIMATION: False # important
 
-MODEL_CONFIG_PATH: "" #path to cylinder model
-MODEL_PARTITION_SIZE: 60
-MODEL_VOXEL_SIZE: 0.15
-MODEL_SAVE_DEBUG: False
+MODEL_CONFIG_PATH: "./model_checkpoint_wd_config.yaml" # important path to cylinder model config
+MODEL_PARTITION_SIZE: 60 # important - for preprocessing
+MODEL_VOXEL_SIZE: 0.15 # important - for preprocessing
+MODEL_SAVE_DEBUG: False # not important
 MODEL_RETURN_UPSAMPLED: True
 MODEL_SELECTION_STRATEGY: "last"
 MODEL_MAX_NUM_PTS: 1000000
-MAX_DISTANCE: 16
-MIN_Z_HEIGHT: -20
+MAX_DISTANCE: 16 # important - for preprocessing
+MIN_Z_HEIGHT: -20 # important - for preprocessing
 
 
-POSTPROCESSING_INTENSITY_TRESH: 90
+POSTPROCESSING_INTENSITY_TRESH: 0 # important - for preprocessing
