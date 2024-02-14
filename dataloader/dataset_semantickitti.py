@@ -163,9 +163,9 @@ class voxel_dataset(data.Dataset):
         label_voxel_pair = label_voxel_pair[np.lexsort((grid_ind[:, 0], grid_ind[:, 1], grid_ind[:, 2])), :]
 
         #  TODO() just debug print
-        print(f'label voxel pair: {label_voxel_pair.shape}, {processed_label.dtype}, processed label: {processed_label.shape}, {processed_label.dtype}')
-
-        processed_label = nb_process_label(np.copy(processed_label), label_voxel_pair)
+        print(f'label voxel pair: {label_voxel_pair.shape}, {label_voxel_pair.dtype}, processed label: {processed_label.shape}, {processed_label.dtype}')
+        print(label_voxel_pair.min())
+        processed_label = nb_process_label(np.copy(processed_label).astype(np.uint8), label_voxel_pair)
         #print(np.sum(processed_label != self.ignore_label), processed_label.shape)
 
         # TODO: check if there is lcw label confidence weight
