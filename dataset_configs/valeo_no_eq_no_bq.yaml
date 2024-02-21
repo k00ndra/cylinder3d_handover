@@ -1,0 +1,12 @@
+source_folder: './../full_annotations/'
+target_folder: './../full_accumulated_dataset_no_eq/'
+supervoxel_size: 35
+voxel_size: 0.15
+min_pts_tresh: 1000
+label_col: -1
+use_bq: False
+bq_radius: 0.2
+plane_inl_tresh: 0.4
+equalize: False
+
+
